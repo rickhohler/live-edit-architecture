@@ -79,9 +79,9 @@ To publish event data on the Live topic, we'll utilize [Dynanmo DB streams](http
 sequenceDiagram
   title Publish Account Changes to Live topic
   App->>ACME Server API: Updated customer data
-  ACME Server API->>Customer Table: Data persisted in data
-  Customer Table->>Event Stream: Save triggers event stream
-  Event Stream->>Live topic: Updated data put on topic
+  ACME Server API->>Customer Table: Data persisted in table
+  Customer Table->>Table Stream: Save triggers event stream
+  Table Stream->>Live topic: Updated data put on topic
 ```
 
 ## Thoughts and Comments
