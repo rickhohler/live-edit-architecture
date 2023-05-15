@@ -1,4 +1,4 @@
-# Live Edit Example
+# Live Edit Architecture
 
 The scenario involves a user utilizing an app to view their customer account data. It is essential that any updates made to the customer account through other apps are promptly reflected to the user while they are accessing their data.
 
