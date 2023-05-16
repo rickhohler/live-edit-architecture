@@ -34,7 +34,7 @@ Our design will be hosted on AWS, leveraging its robust infrastructure.
 * **Customer App** - ACME has developed an app that empowers customers to effortlessly access and manage their account data, enabling them to view and update it with ease.
 * **Representive App** - ACME help desk representatives utilize the Representative App to efficiently modify customer data on behalf of the users whenever they contact the company via phone or chat.
 * **ACME Server** - An AWS-hosted system that leverages the power of Cognito and Simple Notification Service (SNS) products to enhance its functionality and deliver efficient services.
-* **Live Topic** - An AWS SNS topic to streamline communication and facilitate seamless interaction whenever changes take place.
+* **Live SNS Topic** - An AWS SNS topic to streamline communication and facilitate seamless interaction whenever changes take place.
 * **Customer Table** - An AWS Dynamo DB table that stores the the Customer Account data mentioned above.
 
 ## App Flows
@@ -49,24 +49,28 @@ We have the flexibility to utilize different app platforms such as iOS, Android,
 
 ### Subscribing to Updates
 
-To minimize the notification overload for the app regarding customer account edits, we will take advantage of AWS [SNS message filtering](https://docs.aws.amazon.com/sns/latest/dg/sns-message-filtering.html). This powerful feature allows us to filter out irrelevant events. By implementing a Universally Unique Identifier (UUID) as the customer ID and enforcing authentication for users, we significantly reduce the likelihood of account event cross-contamination.
+To start receiving messages, it is essential to [create](https://docs.aws.amazon.com/sns/latest/dg/sns-create-subscribe-endpoint-to-topic.html) an endpoint to the desired topic. In our implementation, we employ the AWS SDK to create a subscription endpoint that is associated with the customer ID, guaranteeing unique identification for each user. 
+
+For iOS applications, AWS SNS utilizes the Apple Push Notification Service (APNS) to deliver messages, while for Android applications, Firebase Cloud Messaging (FCM) is used. Please note that AWS SNS push for web clients is not currently supported by AWS SNS.
 
 It is important to highlight that the flow for both the representative app and the customer app is identical. In the sequence diagrams presented below, the term "App" encompasses both the representative and customer applications.
 
 ```mermaid
 sequenceDiagram
   title App Subscription Flow
-  App->>SNS SDK: Subscribe to events filtered on the customer id
-  SNS SDK->>Live Topic: Subscribe to live topic
-  Live Topic->>SNS SDK: Return status
-  SNS SDK->>App: Return status
+  App->>AWS SNS SDK: Register app for SNS push events
+  AWS SNS SDK->>App: Return status
+  App->>AWS SNS SDK: Create subscription endpoint with customer id
+  AWS SNS SDK->>Live SNS Topic: Setup endpoint to receive topic messages
+  Live SNS Topic->>AWS SNS SDK: Return status
+  AWS SNS SDK->>App: Return status
 ```
 
 ```mermaid
 sequenceDiagram
   title App Receives Live Edit Event Flow
-  Live topic->>SNS SDK: Event published for filtered customer id
-  SNS SDK->>App: Changed data attributes received
+  SNS Server->>App Notification: Message pushed down to app
+  App Notification->>App: App received silent notification
   App->>App: View / Page Updates to Reflect Changes
 
 ```
@@ -77,11 +81,11 @@ To publish event data on the Live topic, we'll utilize [Dynanmo DB streams](http
 
 ```mermaid
 sequenceDiagram
-  title Publish Account Changes to Live topic
+  title Publish Account Changes to Live SNS Topic
   App->>ACME Server API: Updated customer data
   ACME Server API->>Customer Table: Data persisted in table
   Customer Table->>Table Stream: Save triggers event stream
-  Table Stream->>Live topic: Updated data put on topic
+  Table Stream->>Live SNS Topic: Updated data put published to Live SNS Topic
 ```
 
 ## Thoughts and Comments
